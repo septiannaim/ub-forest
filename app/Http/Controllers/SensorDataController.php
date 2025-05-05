@@ -4,112 +4,112 @@ namespace App\Http\Controllers;
 
 use App\Models\SensorData;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class SensorDataController extends Controller
 {
     public function index(Request $request)
-{
-    // Tangkap device_id dari query parameter
-    $deviceId = $request->query('device_id');
+    {
+        // Capture device_id from query parameter
+        $deviceId = $request->query('device_id');
 
-    // Jika ada device_id, filter datanya
-    if ($deviceId) {
-        $data = SensorData::where('device_id', $deviceId)
-                          ->orderBy('timestamp', 'asc')
-                          ->get();
-    } else {
-        // Jika tidak ada device_id, ambil semua data
-        $data = SensorData::all();
+        if ($deviceId) {
+            $data = SensorData::where('device_id', $deviceId)
+                            ->orderBy('timestamp', 'asc')
+                            ->get();
+        } else {
+            // If no device_id is provided, get all data
+            $data = SensorData::all();
+        }
+
+        return response()->json($data, 200);
     }
 
-    return response()->json($data, 200);
-}
-
-
-    // Ambil data berdasarkan ID (opsional, jika ingin menampilkan detail satu data)
     public function show($id)
     {
         $data = SensorData::find($id);
 
         if (!$data) {
-            return response()->json(['message' => 'Data tidak ditemukan'], 404);
+            return response()->json(['message' => 'Data not found'], 404);
         }
 
         return response()->json($data, 200);
     }
 
-  // Store the sensor data sent from the LoRa Sender
-public function store(Request $request)
-{
-    // Validate the incoming data
-    $request->validate([
-        'device_id'    => 'required',
-        'suhu'         => 'required|numeric',
-        'kelembapan'   => 'required|numeric',
-        'pintu_status' => 'required|string',
-        'vibrasi'      => 'required|numeric',
-        'getaran'      => 'required|numeric',
-        'latitude'     => 'required|numeric',
-        'longitude'    => 'required|numeric',
-        'timestamp'    => 'required|date_format:Y-m-d H:i:s',
-    ]);
+    public function store(Request $request)
+    {
+        // Validasi data yang diterima
+        $request->validate([
+            'device_id' => 'required|integer',
+            'suhu' => 'required|numeric',
+            'kelembapan' => 'required|numeric',
+            'getaran' => 'required|numeric',
+            'pintu_status' => 'required|string',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'pir' => 'required|string',
+        ]);
+    
+        // Menyimpan data ke dalam database
+        $sensorData = new SensorData();
+        $sensorData->device_id = $request->device_id;
+        $sensorData->suhu = $request->suhu;
+        $sensorData->kelembapan = $request->kelembapan;
+        $sensorData->getaran = $request->getaran;
+        $sensorData->pintu_status = $request->pintu_status;
+        $sensorData->latitude = $request->latitude;
+        $sensorData->longitude = $request->longitude;
+    
+        // Menyimpan timestamp otomatis menggunakan Carbon
+        $sensorData->timestamp = Carbon::now();  // Menggunakan waktu sekarang untuk kolom 'timestamp'
+    
+        $sensorData->pir = $request->pir;
+        $sensorData->save();
+    
+        return response()->json([
+            'message' => 'Data sensor berhasil disimpan',
+            'data' => $sensorData
+        ], 201);
+    }
 
-    // Create a new record in the database
-    $data = SensorData::create([
-        'device_id'    => $request->device_id,
-        'suhu'         => $request->suhu,
-        'kelembapan'   => $request->kelembapan,
-        'pintu_status' => $request->pintu_status,
-        'vibrasi'      => $request->vibrasi,
-        'getaran'      => $request->getaran,
-        'latitude'     => $request->latitude,
-        'longitude'    => $request->longitude,
-        'timestamp'    => $request->timestamp,
-    ]);
-
-    return response()->json($data, 201);
-}
-
-    // Update data
     public function update(Request $request, $id)
     {
         $data = SensorData::find($id);
 
         if (!$data) {
-            return response()->json(['message' => 'Data tidak ditemukan'], 404);
+            return response()->json(['message' => 'Data not found'], 404);
         }
 
-        // Bisa lakukan validasi ulang di sini jika diperlukan
-        // Contoh validasi sederhana:
-        $request->validate([
-            'suhu'         => 'numeric|nullable',
-            'kelembapan'   => 'numeric|nullable',
-            'pintu_status' => 'string|nullable',
-            'vibrasi'      => 'numeric|nullable',
-            'getaran'      => 'numeric|nullable',
-            'latitude'     => 'numeric|nullable',
-            'longitude'    => 'numeric|nullable',
-            'timestamp'    => 'date_format:Y-m-d H:i:s|nullable',
+        // Update data with incoming request data
+        $validated = $request->validate([
+            'suhu'         => 'nullable|numeric',
+            'kelembapan'   => 'nullable|numeric',
+            'pintu_status' => 'nullable|string',
+            'pir'          => 'nullable|numeric',
+            'getaran'      => 'nullable|numeric',
+            'latitude'     => 'nullable|numeric',
+            'longitude'    => 'nullable|numeric',
+            'timestamp'    => 'nullable|date_format:Y-m-d H:i:s',
         ]);
 
-        // Update data
-        $data->update($request->all());
+        $data->update($validated);
 
         return response()->json($data, 200);
     }
 
-    // Hapus data
     public function destroy($id)
     {
         $data = SensorData::find($id);
 
         if (!$data) {
-            return response()->json(['message' => 'Data tidak ditemukan'], 404);
+            return response()->json(['message' => 'Data not found'], 404);
         }
 
         $data->delete();
-        return response()->json(['message' => 'Data berhasil dihapus'], 200);
+
+        return response()->json(['message' => 'Data deleted successfully'], 200);
     }
+
     public function getAllData()
     {
         $sensorData = SensorData::all();
@@ -117,20 +117,15 @@ public function store(Request $request)
     }
 
     public function latestByDevice($deviceId)
-{
-    // Ambil record paling baru (timestamp terbaru) untuk device tertentu
-    $data = SensorData::where('device_id', $deviceId)
-                      ->orderBy('timestamp', 'desc')
-                      ->first();
+    {
+        $data = SensorData::where('device_id', $deviceId)
+                          ->orderBy('timestamp', 'desc')
+                          ->first();
 
-    if (!$data) {
-        return response()->json(['message' => 'Data tidak ditemukan'], 404);
+        if (!$data) {
+            return response()->json(['message' => 'No data found'], 404);
+        }
+
+        return response()->json($data, 200);
     }
-
-    return response()->json($data, 200);
-}
-
-   
-
-    
 }

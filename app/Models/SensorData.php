@@ -16,7 +16,7 @@ class SensorData extends Model
         'suhu',
         'kelembapan',
         'pintu_status',
-        'vibrasi',
+        'pir',
         'getaran',
         'latitude',
         'longitude',

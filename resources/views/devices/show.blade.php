@@ -113,8 +113,8 @@
                 <div class="card-header p-2 ps-3">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <p class="text-sm mb-0 text-capitalize">Vibrasi</p>
-                            <h4 class="mb-0" id="vibrasiValue">{{ $latestSensorData->vibrasi ?? 'N/A' }} m/s²</h4>
+                            <p class="text-sm mb-0 text-capitalize">Pir</p>
+                            <h4 class="mb-0" id="pirValue">{{ $latestSensorData->pir ?? 'N/A' }} </h4>
                         </div>
                         <div class="icon icon-md icon-shape bg-gradient-dark shadow-dark shadow text-center border-radius-lg">
                             <i class="material-symbols-rounded opacity-10">vibration</i>
@@ -208,17 +208,18 @@
             </div>
         </div>
 
-        <!-- Grafik Vibrasi -->
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Grafik Vibrasi</h4>
-                </div>
-                <div class="card-body">
-                    <canvas id="vibrationChart"></canvas>
-                </div>
-            </div>
+<!-- Grafik PIR -->
+<div class="col-lg-6">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">Grafik PIR </h4>
         </div>
+        <div class="card-body">
+            <canvas id="pirChart"></canvas>
+        </div>
+    </div>
+</div>
+
 
         <!-- Grafik Getaran -->
         <div class="col-lg-6">
@@ -248,7 +249,7 @@
         temperature: [],
         humidity: [],
         doorSwitch: [],
-        vibration: [],
+        pir: [],
         shock: []
     };
 
@@ -300,8 +301,8 @@
     );
 
     let vibrationChart = createChart(
-        document.getElementById('vibrationChart').getContext('2d'),
-        "Vibrasi (m/s²)",
+        document.getElementById('pirChart').getContext('2d'),
+        "Sensor PIR (Passive Infrared) (0 = Ada gerakan, 1 = Tidak Ada Gerakan)",
         sensorData.vibration,
         'rgba(75, 192, 192, 1)'
     );
@@ -324,7 +325,7 @@
                 sensorData.temperature = [];
                 sensorData.humidity = [];
                 sensorData.doorSwitch = [];
-                sensorData.vibration = [];
+                sensorData.pir = [];
                 sensorData.shock = [];
 
                 // Iterasi setiap record dan masukkan ke array
@@ -333,7 +334,7 @@
                     sensorData.temperature.push(record.suhu);
                     sensorData.humidity.push(record.kelembapan);
                     sensorData.doorSwitch.push(record.pintu_status === 'tertutup' ? 1 : 0);
-                    sensorData.vibration.push(record.vibrasi);
+                    sensorData.pir.push(record.pir === 'tidak ada gerakan' ? 1 : 0);
                     sensorData.shock.push(record.getaran);
                 });
 
@@ -351,7 +352,7 @@
                 doorSwitchChart.update();
 
                 vibrationChart.data.labels = sensorData.labels;
-                vibrationChart.data.datasets[0].data = sensorData.vibration;
+                vibrationChart.data.datasets[0].data = sensorData.pir;
                 vibrationChart.update();
 
                 shockChart.data.labels = sensorData.labels;
@@ -368,65 +369,134 @@
     function fetchLatestSensor() {
         // Memanggil endpoint show untuk mengambil data sensor terbaru berdasarkan device_id
         fetch(`/api/sensor-data/latest/${deviceId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.message === "Data tidak ditemukan") {
-                    console.log("Data sensor tidak ditemukan untuk device_id =", deviceId);
-                    return;
-                }
-                console.log("Data sensor terbaru:", data);
+        .then(response => response.json())
+        .then(data => {
+            // Data diharapkan berupa array record
+            // Reset array sensorData
+            sensorData.labels = [];
+            sensorData.temperature = [];
+            sensorData.humidity = [];
+            sensorData.doorSwitch = [];
+            sensorData.pir = [];
+            sensorData.shock = [];
 
-                // Update sensor cards
-                if (data.suhu !== undefined) {
-                    document.getElementById('suhuValue').innerText = data.suhu + "°C";
-                }
-                if (data.kelembapan !== undefined) {
-                    document.getElementById('kelembapanValue').innerText = data.kelembapan + "%";
-                }
-                if (data.pintu_status !== undefined) {
-                    document.getElementById('pintuStatusValue').innerText =
-                        (data.pintu_status === 'tertutup') ? 'Tertutup' : 'Terbuka';
-                }
-                if (data.vibrasi !== undefined) {
-                    document.getElementById('vibrasiValue').innerText = data.vibrasi + " m/s²";
-                }
-                if (data.getaran !== undefined) {
-                    document.getElementById('getaranValue').innerText = data.getaran + " Hz";
+            // Iterasi setiap record dan masukkan ke array
+            data.forEach(record => {
+                sensorData.labels.push(record.timestamp);
+                sensorData.temperature.push(record.suhu);
+                sensorData.humidity.push(record.kelembapan);
+                sensorData.doorSwitch.push(record.pintu_status === 'tertutup' ? 1 : 0);
+
+                // Handle 'pir' data as 1 for 'Tidak Ada Gerakan' and 0 for 'Ada Gerakan'
+                if (record.pir === 'Tidak Ada Gerakan') {
+                    sensorData.pir.push(1); // No movement
+                } else if (record.pir === 'Ada Gerakan') {
+                    sensorData.pir.push(0); // Movement detected
+                } else {
+                    sensorData.pir.push(null); // If the value is unexpected, set as null
                 }
 
-                // Jika data timestamp baru belum ada di sensorData, tambahkan data baru ke array
-                if (data.timestamp && !sensorData.labels.includes(data.timestamp)) {
-                    sensorData.labels.push(data.timestamp);
-                    sensorData.temperature.push(data.suhu ?? 0);
-                    sensorData.humidity.push(data.kelembapan ?? 0);
-                    sensorData.doorSwitch.push(data.pintu_status === 'tertutup' ? 1 : 0);
-                    sensorData.vibration.push(data.vibrasi ?? 0);
-                    sensorData.shock.push(data.getaran ?? 0);
+                sensorData.shock.push(record.getaran);
+            });
 
-                    // Perbarui semua chart dengan data terbaru
-                    temperatureChart.data.labels = sensorData.labels;
-                    temperatureChart.data.datasets[0].data = sensorData.temperature;
-                    temperatureChart.update();
+            // Perbarui semua chart dengan data historis
+            temperatureChart.data.labels = sensorData.labels;
+            temperatureChart.data.datasets[0].data = sensorData.temperature;
+            temperatureChart.update();
 
-                    humidityChart.data.labels = sensorData.labels;
-                    humidityChart.data.datasets[0].data = sensorData.humidity;
-                    humidityChart.update();
+            humidityChart.data.labels = sensorData.labels;
+            humidityChart.data.datasets[0].data = sensorData.humidity;
+            humidityChart.update();
 
-                    doorSwitchChart.data.labels = sensorData.labels;
-                    doorSwitchChart.data.datasets[0].data = sensorData.doorSwitch;
-                    doorSwitchChart.update();
+            doorSwitchChart.data.labels = sensorData.labels;
+            doorSwitchChart.data.datasets[0].data = sensorData.doorSwitch;
+            doorSwitchChart.update();
 
-                    vibrationChart.data.labels = sensorData.labels;
-                    vibrationChart.data.datasets[0].data = sensorData.vibration;
-                    vibrationChart.update();
+            vibrationChart.data.labels = sensorData.labels;
+            vibrationChart.data.datasets[0].data = sensorData.pir;
+            vibrationChart.update();
 
-                    shockChart.data.labels = sensorData.labels;
-                    shockChart.data.datasets[0].data = sensorData.shock;
-                    shockChart.update();
+            shockChart.data.labels = sensorData.labels;
+            shockChart.data.datasets[0].data = sensorData.shock;
+            shockChart.update();
+        })
+        .catch(error => console.error("Error fetching historical data:", error));
+}
+
+// Fungsi untuk update data sensor terbaru secara real-time
+function fetchLatestSensor() {
+    fetch(`/api/sensor-data/latest/${deviceId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.message === "Data tidak ditemukan") {
+                console.log("Data sensor tidak ditemukan untuk device_id =", deviceId);
+                return;
+            }
+            console.log("Data sensor terbaru:", data);
+
+            // Update sensor cards
+            if (data.suhu !== undefined) {
+                document.getElementById('suhuValue').innerText = data.suhu + "°C";
+            }
+            if (data.kelembapan !== undefined) {
+                document.getElementById('kelembapanValue').innerText = data.kelembapan + "%";
+            }
+            if (data.pintu_status !== undefined) {
+                document.getElementById('pintuStatusValue').innerText =
+                    (data.pintu_status === 'tertutup') ? 'Tertutup' : 'Terbuka';
+            }
+
+            // Handle 'pir' data correctly
+            if (data.pir !== undefined) {
+                document.getElementById('pirValue').innerText = 
+                    (data.pir === 'Tidak Ada Gerakan') ? 'Tidak Ada Gerakan' : 'Ada Gerakan';
+            }
+            if (data.getaran !== undefined) {
+                document.getElementById('getaranValue').innerText = data.getaran + " Hz";
+            }
+
+            // If data timestamp is new, add it to sensorData array
+            if (data.timestamp && !sensorData.labels.includes(data.timestamp)) {
+                sensorData.labels.push(data.timestamp);
+                sensorData.temperature.push(data.suhu ?? 0);
+                sensorData.humidity.push(data.kelembapan ?? 0);
+                sensorData.doorSwitch.push(data.pintu_status === 'tertutup' ? 1 : 0);
+
+                // Handle 'pir' data
+                if (data.pir === 'Tidak Ada Gerakan') {
+                    sensorData.pir.push(1);  // No movement
+                } else if (data.pir === 'Ada Gerakan') {
+                    sensorData.pir.push(0);  // Movement detected
+                } else {
+                    sensorData.pir.push(null); // If unexpected value, use null
                 }
-            })
-            .catch(error => console.error("Error fetching sensor data:", error));
-    }
+
+                sensorData.shock.push(data.getaran ?? 0);
+
+                // Update all charts with the latest data
+                temperatureChart.data.labels = sensorData.labels;
+                temperatureChart.data.datasets[0].data = sensorData.temperature;
+                temperatureChart.update();
+
+                humidityChart.data.labels = sensorData.labels;
+                humidityChart.data.datasets[0].data = sensorData.humidity;
+                humidityChart.update();
+
+                doorSwitchChart.data.labels = sensorData.labels;
+                doorSwitchChart.data.datasets[0].data = sensorData.doorSwitch;
+                doorSwitchChart.update();
+
+                vibrationChart.data.labels = sensorData.labels;
+                vibrationChart.data.datasets[0].data = sensorData.pir;
+                vibrationChart.update();
+
+                shockChart.data.labels = sensorData.labels;
+                shockChart.data.datasets[0].data = sensorData.shock;
+                shockChart.update();
+            }
+        })
+        .catch(error => console.error("Error fetching sensor data:", error));
+}
 
     // Panggil fungsi update data sensor terbaru setiap 2 detik
     setInterval(fetchLatestSensor, 2000);
@@ -445,7 +515,7 @@
         let filteredTemperature = [];
         let filteredHumidity = [];
         let filteredDoorSwitch = [];
-        let filteredVibration = [];
+        let filteredPir = [];
         let filteredShock = [];
 
         for (let i = 0; i < sensorData.labels.length; i++) {
@@ -454,7 +524,7 @@
                 filteredTemperature.push(sensorData.temperature[i]);
                 filteredHumidity.push(sensorData.humidity[i]);
                 filteredDoorSwitch.push(sensorData.doorSwitch[i]);
-                filteredVibration.push(sensorData.vibration[i]);
+                filteredPir.push(sensorData.pir[i]);
                 filteredShock.push(sensorData.shock[i]);
             }
         }
@@ -472,7 +542,7 @@
         doorSwitchChart.update();
 
         vibrationChart.data.labels = filteredLabels;
-        vibrationChart.data.datasets[0].data = filteredVibration;
+        vibrationChart.data.datasets[0].data = filteredPir;
         vibrationChart.update();
 
         shockChart.data.labels = filteredLabels;
