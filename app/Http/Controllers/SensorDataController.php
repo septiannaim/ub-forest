@@ -10,18 +10,20 @@ class SensorDataController extends Controller
 {
     public function index(Request $request)
     {
-        // Capture device_id from query parameter
+        // Ambil parameter device_id jika ada di query string
         $deviceId = $request->query('device_id');
 
+        // Jika ada device_id, tampilkan data berdasarkan device_id
         if ($deviceId) {
             $data = SensorData::where('device_id', $deviceId)
-                            ->orderBy('timestamp', 'asc')
-                            ->get();
+                ->orderBy('timestamp', 'asc')
+                ->get();
         } else {
-            // If no device_id is provided, get all data
+            // Jika tidak ada device_id, tampilkan semua data
             $data = SensorData::all();
         }
 
+        // Kembalikan response dalam bentuk JSON
         return response()->json($data, 200);
     }
 
@@ -49,7 +51,7 @@ class SensorDataController extends Controller
             'longitude' => 'required|numeric',
             'pir' => 'required|string',
         ]);
-    
+
         // Menyimpan data ke dalam database
         $sensorData = new SensorData();
         $sensorData->device_id = $request->device_id;
@@ -59,13 +61,13 @@ class SensorDataController extends Controller
         $sensorData->pintu_status = $request->pintu_status;
         $sensorData->latitude = $request->latitude;
         $sensorData->longitude = $request->longitude;
-    
+
         // Menyimpan timestamp otomatis menggunakan Carbon
         $sensorData->timestamp = Carbon::now();  // Menggunakan waktu sekarang untuk kolom 'timestamp'
-    
+
         $sensorData->pir = $request->pir;
         $sensorData->save();
-    
+
         return response()->json([
             'message' => 'Data sensor berhasil disimpan',
             'data' => $sensorData
@@ -119,8 +121,8 @@ class SensorDataController extends Controller
     public function latestByDevice($deviceId)
     {
         $data = SensorData::where('device_id', $deviceId)
-                          ->orderBy('timestamp', 'desc')
-                          ->first();
+            ->orderBy('timestamp', 'desc')
+            ->first();
 
         if (!$data) {
             return response()->json(['message' => 'No data found'], 404);

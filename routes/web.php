@@ -57,5 +57,7 @@ Route::get('/logs/exportPdf/{device}', [LogController::class, 'exportPdf'])->nam
     Route::get('/sensor/{id}', [SensorDataController::class, 'getLatestData']);
 });
 
+
+
 // Mengimpor route bawaan autentikasi (Laravel Breeze, dll.)
 require __DIR__.'/auth.php';
