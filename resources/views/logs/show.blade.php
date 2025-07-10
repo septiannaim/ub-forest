@@ -30,6 +30,7 @@
             <input 
                 type="date" 
                 class="form-control" 
+                
                 name="end_date" 
                 value="{{ $endDate ?? '' }}"
             >

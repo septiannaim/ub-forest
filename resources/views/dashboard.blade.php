@@ -38,7 +38,7 @@
 
                     <div class="col-4">
                         <div class="card p-3 bg-light shadow-sm">
-                            <h4 class="fw-bold text-warning"><span id="vibrationValue">-</span> m/s²</h4>
+                            <h4 class="fw-bold text-warning"><span id="vibrationValue">-</span>Hz</h4>
                             <p class="text-muted small">Vibrasi 🔄</p>
                         </div>
                     </div>

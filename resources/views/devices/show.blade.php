@@ -44,7 +44,7 @@
                                 : 'N/A' 
                             }}
                         </span>
-                        dari kemarin
+                        
                     </p>
                 </div>
             </div>
@@ -73,7 +73,7 @@
                                 : 'N/A' 
                             }}
                         </span>
-                        dari kemarin
+                        
                     </p>
                 </div>
             </div>
@@ -101,7 +101,7 @@
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-2 ps-3">
                     <p class="mb-0 text-sm">
-                        <span class="text-danger font-weight-bolder">Tertutup</span> selama 2 jam terakhir
+                        <span class="text-danger font-weight-bolder"></span> 
                     </p>
                 </div>
             </div>
@@ -124,7 +124,7 @@
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-2 ps-3">
                     <p class="mb-0 text-sm">
-                        <span class="text-danger font-weight-bolder">+1.1</span> dari normal
+                        <span class="text-danger font-weight-bolder"></span>
                     </p>
                 </div>
             </div>
@@ -147,7 +147,7 @@
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-2 ps-3">
                     <p class="mb-0 text-sm">
-                        <span class="text-success font-weight-bolder">Normal</span> tidak ada perubahan
+                        <span class="text-success font-weight-bolder"></span>
                     </p>
                 </div>
             </div>
